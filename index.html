@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniList User Metrics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #0b0e1a; color: white; min-height: 100vh; }
+    header { background-color: #151f2e; border-bottom: 1px solid #1a2332; padding: 1rem 1.5rem; }
+    .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header-content h1 { font-size: 1.25rem; color: #3db4f2; font-weight: bold; }
+    main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem; }
+    
+    /* Performance Section */
+    .velocity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .v-card { background: #151f2e; padding: 1.5rem; border-radius: 0.8rem; border: 1px solid #1a2332; text-align: center; }
+    .v-card span.label { display: block; font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 700; }
+    .v-card .value-row { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: nowrap; }
+    .v-card strong { font-size: 1.5rem; color: #3db4f2; white-space: nowrap; }
+    .v-card .comparison { font-size: 0.9rem; color: #9ca3af; white-space: nowrap; }
+    
+    .trend-up { color: #4ade80 !important; font-weight: bold; }
+    .trend-down { color: #f87171 !important; font-weight: bold; }
+
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .chart-container { background: #151f2e; border: 1px solid #1a2332; border-radius: 0.8rem; padding: 1.5rem; }
+    .section-title { margin: 3rem 0 1.2rem; font-size: 1.4rem; border-left: 4px solid #3db4f2; padding-left: 1rem; }
+
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.5rem; justify-items: center; }
+    .anime-card { background-color: #1a1d2e; border-radius: 0.5rem; overflow: hidden; transition: 0.3s; text-decoration: none; color: inherit; width: 210px; border: 1px solid transparent; }
+    .anime-card:hover { transform: translateY(-5px); border-color: #3db4f2; }
+    .anime-cover { width: 210px; height: 300px; overflow: hidden; }
+    .anime-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .anime-content { padding: 1rem; }
+    .anime-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .blue { color: #3db4f2; } .purple { color: #a78bfa; } .green { color: #4ade80; } .orange { color: #fb923c; }
+    .hidden { display: none !important; }
+    
+    #loginStep { display: flex; justify-content: center; align-items: center; min-height: 60vh; }
+    .login-card { background: #151f2e; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 400px; text-align: center; }
+    input { width: 100%; background: #0b0e1a; border: 1px solid #1a2332; padding: 1rem; color: white; border-radius: 0.5rem; margin-bottom: 1rem; }
+    button { background: #3db4f2; color: white; width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h1>AniList Media Analytics</h1>
+      <div id="userInfo" class="hidden">User: <strong id="usernameDisplay" class="blue"></strong></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="loginStep">
+      <div class="login-card">
+        <input type="text" id="usernameInput" placeholder="AniList Username" />
+        <button id="analyzeBtn">Analyze Metrics</button>
+      </div>
+    </div>
+
+    <div id="dashboardStep" class="hidden">
+      <h2 class="section-title">Consistency & Performance <small style="font-size: 0.8rem; color: #9ca3af;">(Overall Avg. vs Last 30 Days)</small></h2>
+      <div class="velocity-grid" id="velocityContainer"></div>
+
+      <div class="dashboard-grid">
+        <div class="chart-container"><canvas id="eraChart"></canvas></div>
+        <div class="chart-container"><canvas id="comboGenreChart"></canvas></div>
+      </div>
+
+      <h2 class="section-title">Priority Recommendations <small style="font-size: 0.8rem; color: #9ca3af;">Strategic suggestions</small></h2>
+      <div id="smartGrid" class="results-grid"></div>
+
+      <h2 class="section-title">Profile Affinities <small style="font-size: 0.8rem; color: #9ca3af;">Based on historical genre combinations</small></h2>
+      <div id="dnaGrid" class="results-grid"></div>
+
+      <div style="text-align: center; margin: 4rem 0;">
+        <button onclick="location.reload()" style="width: auto; padding: 1rem 3rem;">Refresh Analysis</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API = 'https://graphql.anilist.co';
+    const query = `query($u:String){
+      User(name:$u){ createdAt }
+      COMPLETED: MediaListCollection(userName:$u,type:ANIME,status:COMPLETED){
+        lists{entries{progress,updatedAt,media{duration,genres,season,seasonYear}}}}
+      PLANNING: MediaListCollection(userName:$u,type:ANIME,status:PLANNING){
+        lists{entries{media{id,title{romaji},coverImage{large},averageScore,popularity,seasonYear,season,status,genres,relations{edges{relationType}}}}}}
+    }`;
+
+    document.getElementById('analyzeBtn').onclick = async () => {
+      const user = document.getElementById('usernameInput').value.trim();
+      if (!user) return;
+      document.getElementById('analyzeBtn').innerText = "Processing Data...";
+
+      try {
+        const resp = await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query, variables: {u: user}}) });
+        const json = await resp.json();
+        process(json.data, user);
+      } catch (e) { alert("Analysis failed. Verify username."); }
+    };
+
+    function process(data, user) {
+      const completed = data.COMPLETED.lists[0].entries;
+      const planningRaw = data.PLANNING.lists[0].entries;
+      const now = Math.floor(Date.now() / 1000);
+      const userCreated = data.User.createdAt;
+      
+      let totalMinutes = 0;
+      let lastMonthMinutes = 0;
+      const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
+      const eraStats = { 'Classic': 0, '2000s': 0, '2010s': 0, 'Modern': 0 };
+      const genreCombos = {};
+      const historyRanking = {};
+
+      completed.forEach(e => {
+        const m = e.media;
+        const mins = (e.progress * (m.duration || 24));
+        totalMinutes += mins;
+        if (e.updatedAt > thirtyDaysAgo) lastMonthMinutes += mins;
+
+        if (m.seasonYear < 2000) eraStats['Classic']++;
+        else if (m.seasonYear < 2010) eraStats['2000s']++;
+        else if (m.seasonYear < 2020) eraStats['2010s']++;
+        else eraStats['Modern']++;
+
+        const gList = m.genres.sort();
+        for(let i=0; i<gList.length; i++) {
+          for(let j=i+1; j<gList.length; j++) {
+            genreCombos[`${gList[i]} + ${gList[j]}`] = (genreCombos[`${gList[i]} + ${gList[j]}`] || 0) + 1;
+          }
+        }
+
+        if(m.season && m.seasonYear) {
+            const key = `${m.season} ${m.seasonYear}`;
+            if(!historyRanking[key]) historyRanking[key] = { year: m.seasonYear, season: m.season, hours: 0, count: 0 };
+            historyRanking[key].count++;
+            historyRanking[key].hours += (e.progress * (m.duration || 24)) / 60;
+        }
+      });
+
+      const daysSinceJoining = Math.max(1, (now - userCreated) / 86400);
+      const histDay = (totalMinutes / 60) / daysSinceJoining;
+      const recentDay = (lastMonthMinutes / 60) / 30;
+
+      renderVelocity(histDay, recentDay);
+
+      const planningList = planningRaw.map(e => {
+        const m = e.media;
+        m.isSequel = m.relations.edges.some(edge => edge.relationType === 'PREQUEL');
+        let affinity = 0;
+        m.genres.forEach((g, i) => {
+          m.genres.slice(i+1).forEach(g2 => {
+            affinity += (genreCombos[`${[g, g2].sort().join(' + ')}`] || 0);
+          });
+        });
+        m.affinityScore = affinity;
+        return m;
+      }).filter(m => !m.isSequel && (m.status === 'FINISHED' || m.status === 'RELEASING'));
+
+      renderDashboard(user, eraStats, genreCombos, Object.values(historyRanking), planningList);
+    }
+
+    function renderVelocity(hist, recent) {
+      const container = document.getElementById('velocityContainer');
+      const metrics = [
+        { label: 'Daily Average', h: hist, r: recent, unit: 'h/d' },
+        { label: 'Weekly Average', h: hist * 7, r: recent * 7, unit: 'h/w' },
+        { label: 'Monthly Average', h: hist * 30, r: recent * 30, unit: 'h/m' }
+      ];
+
+      container.innerHTML = metrics.map(m => {
+        const isUp = m.r >= m.h;
+        const icon = isUp ? '↑' : '↓';
+        const trendClass = isUp ? 'trend-up' : 'trend-down';
+        return `
+          <div class="v-card">
+            <span class="label">${m.label}</span>
+            <div class="value-row">
+              <strong>${m.h.toFixed(2)}${m.unit}</strong>
+              <div class="comparison">
+                (<span class="${trendClass}">${icon} ${m.r.toFixed(2)}${m.unit}</span>)
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDashboard(user, era, gCombos, ranking, planning) {
+      document.getElementById('loginStep').classList.add('hidden');
+      document.getElementById('dashboardStep').classList.remove('hidden');
+      document.getElementById('usernameDisplay').innerText = user;
+
+      new Chart(document.getElementById('eraChart'), { 
+        type: 'polarArea', 
+        data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#3db4f2', '#4ade80'] }] },
+        options: { plugins: { title: { display: true, text: 'PERIOD PREFERENCE', color: '#9ca3af' } } }
+      });
+
+      const topC = Object.entries(gCombos).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      new Chart(document.getElementById('comboGenreChart'), { 
+        type: 'bar', 
+        data: { labels: topC.map(x => x[0]), datasets: [{ data: topC.map(x => x[1]), backgroundColor: '#a78bfa' }] }, 
+        options: { indexAxis: 'y', plugins: { legend: {display: false}, title: {display: true, text: 'GENRE AFFINITIES', color: '#9ca3af'} } } 
+      });
+
+      const chosen = new Set();
+      const smart = [];
+      const sortedRanking = ranking.sort((a,b) => (b.hours * Math.sqrt(b.count)) - (a.hours * Math.sqrt(a.count)));
+
+      const bestScore = [...planning].sort((a,b) => b.averageScore - a.averageScore)[0];
+      if(bestScore) { chosen.add(bestScore.id); smart.push({a: bestScore, l: 'Top Rated', c: 'green'}); }
+      
+      for(let r of sortedRanking) {
+        const m = planning.find(a => !chosen.has(a.id) && a.seasonYear === r.year);
+        if(m) { chosen.add(m.id); smart.push({a: m, l: `Best of ${r.year}`, c: 'blue'}); break; }
+      }
+
+      const mostPopular = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.popularity - a.popularity)[0];
+      if(mostPopular) { chosen.add(mostPopular.id); smart.push({a: mostPopular, l: 'Popular Choice', c: 'orange'}); }
+
+      const trending = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore)[0];
+      if(trending) { chosen.add(trending.id); smart.push({a: trending, l: 'Taste Match', c: 'purple'}); }
+
+      const aff = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore).slice(0, 4);
+
+      const card = (item, label, color) => `
+        <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
+          <div class="anime-cover"><img src="${item.coverImage.large}"></div>
+          <div class="anime-content">
+            <div class="anime-category ${color}" style="font-size:0.6rem; font-weight:bold; text-transform:uppercase; margin-bottom:5px;">${label}</div>
+            <h3 class="anime-title">${item.title.romaji}</h3>
+            <div style="font-size: 0.7rem; color: #9ca3af;">Avg: ${item.averageScore || 'N/A'}% | Affinity: ${item.affinityScore}</div>
+          </div>
+        </a>`;
+
+      document.getElementById('smartGrid').innerHTML = smart.map(p => card(p.a, p.l, p.c)).join('');
+      document.getElementById('dnaGrid').innerHTML = aff.map(a => card(a, 'High Affinity', 'purple')).join('');
+    }
+  </script>
+</body>
+</html>
