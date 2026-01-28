@@ -11,9 +11,12 @@
     header { background-color: #151f2e; border-bottom: 1px solid #1a2332; padding: 1rem 1.5rem; }
     .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
     .header-content h1 { font-size: 1.25rem; color: #3db4f2; font-weight: bold; }
+    
+    .profile-badge { display: flex; align-items: center; gap: 12px; }
+    .profile-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #3db4f2; object-fit: cover; }
+
     main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem; }
     
-    /* Performance Section */
     .velocity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .v-card { background: #151f2e; padding: 1.5rem; border-radius: 0.8rem; border: 1px solid #1a2332; text-align: center; }
     .v-card span.label { display: block; font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 700; }
@@ -27,6 +30,18 @@
     .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .chart-container { background: #151f2e; border: 1px solid #1a2332; border-radius: 0.8rem; padding: 1.5rem; }
     .section-title { margin: 3rem 0 1.2rem; font-size: 1.4rem; border-left: 4px solid #3db4f2; padding-left: 1rem; }
+
+    .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .ranking-col { background: #151f2e; padding: 1.5rem; border-radius: 0.8rem; border: 1px solid #1a2332; }
+    
+    /* Ranking Item Styles with Link support */
+    .rank-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid #1a233233; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: 4px; }
+    .rank-item:hover { background: #1a2332; }
+    .rank-item:last-child { border: none; }
+    .rank-img { width: 40px; height: 55px; border-radius: 4px; object-fit: cover; }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rank-score { font-size: 0.8rem; color: #4ade80; font-weight: bold; }
 
     .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.5rem; justify-items: center; }
     .anime-card { background-color: #1a1d2e; border-radius: 0.5rem; overflow: hidden; transition: 0.3s; text-decoration: none; color: inherit; width: 210px; border: 1px solid transparent; }
@@ -49,7 +64,10 @@
   <header>
     <div class="header-content">
       <h1>AniList Media Analytics</h1>
-      <div id="userInfo" class="hidden">User: <strong id="usernameDisplay" class="blue"></strong></div>
+      <div id="userInfo" class="hidden profile-badge">
+        <span id="usernameDisplay" class="blue" style="font-weight: bold;"></span>
+        <img id="userAvatar" class="profile-avatar" src="">
+      </div>
     </div>
   </header>
 
@@ -70,6 +88,22 @@
         <div class="chart-container"><canvas id="comboGenreChart"></canvas></div>
       </div>
 
+      <h2 class="section-title">Top Rated by Period <small style="font-size: 0.8rem; color: #9ca3af;">Based on your scores</small></h2>
+      <div class="ranking-grid">
+        <div class="ranking-col">
+          <h4 style="margin-bottom:15px; color:#a78bfa; font-size:0.9rem;">LAST 30 DAYS</h4>
+          <div id="top30"></div>
+        </div>
+        <div class="ranking-col">
+          <h4 style="margin-bottom:15px; color:#3db4f2; font-size:0.9rem;">LAST 90 DAYS</h4>
+          <div id="top90"></div>
+        </div>
+        <div class="ranking-col">
+          <h4 style="margin-bottom:15px; color:#4ade80; font-size:0.9rem;">LAST YEAR</h4>
+          <div id="top365"></div>
+        </div>
+      </div>
+
       <h2 class="section-title">Priority Recommendations <small style="font-size: 0.8rem; color: #9ca3af;">Strategic suggestions</small></h2>
       <div id="smartGrid" class="results-grid"></div>
 
@@ -85,9 +119,9 @@
   <script>
     const API = 'https://graphql.anilist.co';
     const query = `query($u:String){
-      User(name:$u){ createdAt }
+      User(name:$u){ name createdAt avatar{medium} }
       COMPLETED: MediaListCollection(userName:$u,type:ANIME,status:COMPLETED){
-        lists{entries{progress,updatedAt,media{duration,genres,season,seasonYear}}}}
+        lists{entries{score(format: POINT_10), progress,updatedAt,media{id, duration,genres,season,seasonYear,title{romaji},coverImage{medium}}}}}
       PLANNING: MediaListCollection(userName:$u,type:ANIME,status:PLANNING){
         lists{entries{media{id,title{romaji},coverImage{large},averageScore,popularity,seasonYear,season,status,genres,relations{edges{relationType}}}}}}
     }`;
@@ -100,16 +134,23 @@
       try {
         const resp = await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query, variables: {u: user}}) });
         const json = await resp.json();
+        if(json.errors) throw new Error();
         process(json.data, user);
-      } catch (e) { alert("Analysis failed. Verify username."); }
+      } catch (e) { alert("Analysis failed. Verify username."); location.reload(); }
     };
 
-    function process(data, user) {
+    function process(data, userName) {
       const completed = data.COMPLETED.lists[0].entries;
       const planningRaw = data.PLANNING.lists[0].entries;
       const now = Math.floor(Date.now() / 1000);
       const userCreated = data.User.createdAt;
       
+      document.getElementById('loginStep').classList.add('hidden');
+      document.getElementById('dashboardStep').classList.remove('hidden');
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('usernameDisplay').innerText = data.User.name;
+      document.getElementById('userAvatar').src = data.User.avatar.medium;
+
       let totalMinutes = 0;
       let lastMonthMinutes = 0;
       const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
@@ -139,15 +180,23 @@
             const key = `${m.season} ${m.seasonYear}`;
             if(!historyRanking[key]) historyRanking[key] = { year: m.seasonYear, season: m.season, hours: 0, count: 0 };
             historyRanking[key].count++;
-            historyRanking[key].hours += (e.progress * (m.duration || 24)) / 60;
+            historyRanking[key].hours += mins / 60;
         }
       });
 
       const daysSinceJoining = Math.max(1, (now - userCreated) / 86400);
-      const histDay = (totalMinutes / 60) / daysSinceJoining;
-      const recentDay = (lastMonthMinutes / 60) / 30;
+      renderVelocity(totalMinutes / 60 / daysSinceJoining, lastMonthMinutes / 60 / 30);
 
-      renderVelocity(histDay, recentDay);
+      const getTop = (days) => {
+        const cutoff = now - (days * 86400);
+        return completed
+          .filter(e => e.updatedAt > cutoff && e.score > 0)
+          .sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+          .slice(0, 5);
+      };
+      renderRankList('top30', getTop(30));
+      renderRankList('top90', getTop(90));
+      renderRankList('top365', getTop(365));
 
       const planningList = planningRaw.map(e => {
         const m = e.media;
@@ -162,7 +211,8 @@
         return m;
       }).filter(m => !m.isSequel && (m.status === 'FINISHED' || m.status === 'RELEASING'));
 
-      renderDashboard(user, eraStats, genreCombos, Object.values(historyRanking), planningList);
+      renderCharts(eraStats, genreCombos);
+      renderRecommendations(historyRanking, planningList);
     }
 
     function renderVelocity(hist, recent) {
@@ -172,30 +222,35 @@
         { label: 'Weekly Average', h: hist * 7, r: recent * 7, unit: 'h/w' },
         { label: 'Monthly Average', h: hist * 30, r: recent * 30, unit: 'h/m' }
       ];
-
       container.innerHTML = metrics.map(m => {
         const isUp = m.r >= m.h;
-        const icon = isUp ? '↑' : '↓';
-        const trendClass = isUp ? 'trend-up' : 'trend-down';
         return `
           <div class="v-card">
             <span class="label">${m.label}</span>
             <div class="value-row">
               <strong>${m.h.toFixed(2)}${m.unit}</strong>
               <div class="comparison">
-                (<span class="${trendClass}">${icon} ${m.r.toFixed(2)}${m.unit}</span>)
+                (<span class="${isUp ? 'trend-up' : 'trend-down'}">${isUp ? '↑' : '↓'} ${m.r.toFixed(2)}${m.unit}</span>)
               </div>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
-    function renderDashboard(user, era, gCombos, ranking, planning) {
-      document.getElementById('loginStep').classList.add('hidden');
-      document.getElementById('dashboardStep').classList.remove('hidden');
-      document.getElementById('usernameDisplay').innerText = user;
+    function renderRankList(id, list) {
+      const el = document.getElementById(id);
+      if(!list.length) { el.innerHTML = '<p style="font-size:0.7rem; color:#9ca3af; padding:10px;">No rated entries.</p>'; return; }
+      el.innerHTML = list.map(e => `
+        <a href="https://anilist.co/anime/${e.media.id}" target="_blank" class="rank-item">
+          <img src="${e.media.coverImage.medium}" class="rank-img">
+          <div class="rank-info">
+            <div class="rank-title">${e.media.title.romaji}</div>
+            <div class="rank-score">★ ${e.score}</div>
+          </div>
+        </a>`).join('');
+    }
 
+    function renderCharts(era, gCombos) {
       new Chart(document.getElementById('eraChart'), { 
         type: 'polarArea', 
         data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#3db4f2', '#4ade80'] }] },
@@ -208,7 +263,10 @@
         data: { labels: topC.map(x => x[0]), datasets: [{ data: topC.map(x => x[1]), backgroundColor: '#a78bfa' }] }, 
         options: { indexAxis: 'y', plugins: { legend: {display: false}, title: {display: true, text: 'GENRE AFFINITIES', color: '#9ca3af'} } } 
       });
+    }
 
+    function renderRecommendations(historyRanking, planning) {
+      const ranking = Object.values(historyRanking);
       const chosen = new Set();
       const smart = [];
       const sortedRanking = ranking.sort((a,b) => (b.hours * Math.sqrt(b.count)) - (a.hours * Math.sqrt(a.count)));
@@ -230,7 +288,7 @@
       const aff = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore).slice(0, 4);
 
       const card = (item, label, color) => `
-        <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
+          <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
           <div class="anime-cover"><img src="${item.coverImage.large}"></div>
           <div class="anime-content">
             <div class="anime-category ${color}" style="font-size:0.6rem; font-weight:bold; text-transform:uppercase; margin-bottom:5px;">${label}</div>
