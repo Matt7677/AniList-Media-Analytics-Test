@@ -7,57 +7,73 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #0b0e1a; color: white; min-height: 100vh; }
-    header { background-color: #151f2e; border-bottom: 1px solid #1a2332; padding: 1rem 1.5rem; }
-    .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-    .header-content h1 { font-size: 1.25rem; color: #3db4f2; font-weight: bold; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #0b0e1a; color: white; min-height: 100vh; line-height: 1.4; }
     
-    .profile-badge { display: flex; align-items: center; gap: 12px; }
-    .profile-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #3db4f2; object-fit: cover; }
+    header { background-color: #151f2e; border-bottom: 1px solid #1a2332; padding: 1rem; position: sticky; top: 0; z-index: 100; }
+    .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .header-content h1 { font-size: 1.1rem; color: #3db4f2; font-weight: bold; }
+    
+    .profile-badge { display: flex; align-items: center; gap: 10px; }
+    .profile-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3db4f2; object-fit: cover; }
 
-    main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem; }
+    main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
     
-    .velocity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .v-card { background: #151f2e; padding: 1.5rem; border-radius: 0.8rem; border: 1px solid #1a2332; text-align: center; }
-    .v-card span.label { display: block; font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 700; }
-    .v-card .value-row { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: nowrap; }
-    .v-card strong { font-size: 1.5rem; color: #3db4f2; white-space: nowrap; }
-    .v-card .comparison { font-size: 0.9rem; color: #9ca3af; white-space: nowrap; }
-    
-    .trend-up { color: #4ade80 !important; font-weight: bold; }
-    .trend-down { color: #f87171 !important; font-weight: bold; }
+    .section-title { margin: 2.5rem 0 1rem; font-size: 1.2rem; border-left: 4px solid #3db4f2; padding-left: 10px; }
+    .section-title small { display: block; font-size: 0.75rem; color: #9ca3af; font-weight: normal; margin-top: 2px; }
 
-    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .chart-container { background: #151f2e; border: 1px solid #1a2332; border-radius: 0.8rem; padding: 1.5rem; }
-    .section-title { margin: 3rem 0 1.2rem; font-size: 1.4rem; border-left: 4px solid #3db4f2; padding-left: 1rem; }
-
-    .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .ranking-col { background: #151f2e; padding: 1.5rem; border-radius: 0.8rem; border: 1px solid #1a2332; }
+    /* Velocity Cards */
+    .velocity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .v-card { background: #151f2e; padding: 1.2rem; border-radius: 0.8rem; border: 1px solid #1a2332; text-align: center; }
+    .v-card span.label { display: block; font-size: 0.65rem; color: #9ca3af; text-transform: uppercase; margin-bottom: 0.4rem; font-weight: 700; }
+    .v-card .value-row { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+    .v-card strong { font-size: 1.4rem; color: #3db4f2; }
+    .v-card .comparison { font-size: 0.85rem; color: #9ca3af; }
     
-    /* Ranking Item Styles with Link support */
-    .rank-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid #1a233233; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: 4px; }
-    .rank-item:hover { background: #1a2332; }
-    .rank-item:last-child { border: none; }
-    .rank-img { width: 40px; height: 55px; border-radius: 4px; object-fit: cover; }
+    .trend-up { color: #4ade80 !important; }
+    .trend-down { color: #f87171 !important; }
+
+    /* Dashboard Charts */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .chart-container { background: #151f2e; border: 1px solid #1a2332; border-radius: 0.8rem; padding: 1rem; min-height: 300px; }
+
+    /* Ranking Columns */
+    .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .ranking-col { background: #151f2e; padding: 1.2rem; border-radius: 0.8rem; border: 1px solid #1a2332; }
+    .rank-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid #1a233233; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: 6px; }
+    .rank-item:hover { background: #1c293d; }
+    .rank-img { width: 42px; height: 58px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
     .rank-info { flex: 1; min-width: 0; }
     .rank-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rank-score { font-size: 0.8rem; color: #4ade80; font-weight: bold; }
+    .rank-score { font-size: 0.8rem; color: #4ade80; font-weight: bold; margin-top: 2px; }
 
-    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.5rem; justify-items: center; }
-    .anime-card { background-color: #1a1d2e; border-radius: 0.5rem; overflow: hidden; transition: 0.3s; text-decoration: none; color: inherit; width: 210px; border: 1px solid transparent; }
-    .anime-card:hover { transform: translateY(-5px); border-color: #3db4f2; }
-    .anime-cover { width: 210px; height: 300px; overflow: hidden; }
+    /* Anime Result Grids */
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+    .anime-card { background-color: #1a1d2e; border-radius: 0.6rem; overflow: hidden; transition: 0.3s; text-decoration: none; color: inherit; border: 1px solid transparent; display: flex; flex-direction: column; }
+    .anime-card:hover { transform: translateY(-3px); border-color: #3db4f2; }
+    .anime-cover { width: 100%; aspect-ratio: 2 / 3; overflow: hidden; }
     .anime-cover img { width: 100%; height: 100%; object-fit: cover; }
-    .anime-content { padding: 1rem; }
-    .anime-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .anime-content { padding: 0.8rem; flex: 1; }
+    .anime-category { font-size: 0.55rem; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+    .anime-title { font-size: 0.8rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 1.9rem; }
+    .anime-meta { font-size: 0.65rem; color: #9ca3af; margin-top: 6px; }
     
     .blue { color: #3db4f2; } .purple { color: #a78bfa; } .green { color: #4ade80; } .orange { color: #fb923c; }
     .hidden { display: none !important; }
     
-    #loginStep { display: flex; justify-content: center; align-items: center; min-height: 60vh; }
-    .login-card { background: #151f2e; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 400px; text-align: center; }
-    input { width: 100%; background: #0b0e1a; border: 1px solid #1a2332; padding: 1rem; color: white; border-radius: 0.5rem; margin-bottom: 1rem; }
-    button { background: #3db4f2; color: white; width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+    /* Login Screen */
+    #loginStep { display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 1rem; }
+    .login-card { background: #151f2e; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 380px; text-align: center; border: 1px solid #1a2332; }
+    input { width: 100%; background: #0b0e1a; border: 1px solid #1a2332; padding: 1rem; color: white; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 1rem; }
+    button { background: #3db4f2; color: white; width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+    button:hover { background: #35a2db; }
+
+    /* Responsive Adjustments */
+    @media (max-width: 600px) {
+      .header-content { justify-content: center; }
+      .results-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.8rem; }
+      .section-title { font-size: 1.1rem; }
+      .v-card strong { font-size: 1.2rem; }
+    }
   </style>
 </head>
 <body>
@@ -65,7 +81,7 @@
     <div class="header-content">
       <h1>AniList Media Analytics</h1>
       <div id="userInfo" class="hidden profile-badge">
-        <span id="usernameDisplay" class="blue" style="font-weight: bold;"></span>
+        <span id="usernameDisplay" class="blue"></span>
         <img id="userAvatar" class="profile-avatar" src="">
       </div>
     </div>
@@ -74,13 +90,13 @@
   <main>
     <div id="loginStep">
       <div class="login-card">
-        <input type="text" id="usernameInput" placeholder="AniList Username" />
+        <input type="text" id="usernameInput" placeholder="AniList Username" spellcheck="false" />
         <button id="analyzeBtn">Analyze Metrics</button>
       </div>
     </div>
 
     <div id="dashboardStep" class="hidden">
-      <h2 class="section-title">Consistency & Performance <small style="font-size: 0.8rem; color: #9ca3af;">(Overall Avg. vs Last 30 Days)</small></h2>
+      <h2 class="section-title">Consistency & Performance <small>(Overall Avg. vs Last 30 Days)</small></h2>
       <div class="velocity-grid" id="velocityContainer"></div>
 
       <div class="dashboard-grid">
@@ -88,30 +104,30 @@
         <div class="chart-container"><canvas id="comboGenreChart"></canvas></div>
       </div>
 
-      <h2 class="section-title">Top Rated by Period <small style="font-size: 0.8rem; color: #9ca3af;">Based on your scores</small></h2>
+      <h2 class="section-title">Top Rated by Period <small>Based on your scores</small></h2>
       <div class="ranking-grid">
         <div class="ranking-col">
-          <h4 style="margin-bottom:15px; color:#a78bfa; font-size:0.9rem;">LAST 30 DAYS</h4>
+          <h4 style="margin-bottom:12px; color:#a78bfa; font-size:0.85rem; text-transform:uppercase;">Last 30 Days</h4>
           <div id="top30"></div>
         </div>
         <div class="ranking-col">
-          <h4 style="margin-bottom:15px; color:#3db4f2; font-size:0.9rem;">LAST 90 DAYS</h4>
+          <h4 style="margin-bottom:12px; color:#3db4f2; font-size:0.85rem; text-transform:uppercase;">Last 90 Days</h4>
           <div id="top90"></div>
         </div>
         <div class="ranking-col">
-          <h4 style="margin-bottom:15px; color:#4ade80; font-size:0.9rem;">LAST YEAR</h4>
+          <h4 style="margin-bottom:12px; color:#4ade80; font-size:0.85rem; text-transform:uppercase;">Last Year</h4>
           <div id="top365"></div>
         </div>
       </div>
 
-      <h2 class="section-title">Priority Recommendations <small style="font-size: 0.8rem; color: #9ca3af;">Strategic suggestions</small></h2>
+      <h2 class="section-title">Priority Recommendations <small>Strategic suggestions</small></h2>
       <div id="smartGrid" class="results-grid"></div>
 
-      <h2 class="section-title">Profile Affinities <small style="font-size: 0.8rem; color: #9ca3af;">Based on historical genre combinations</small></h2>
+      <h2 class="section-title">Profile Affinities <small>Based on historical genre combinations</small></h2>
       <div id="dnaGrid" class="results-grid"></div>
 
       <div style="text-align: center; margin: 4rem 0;">
-        <button onclick="location.reload()" style="width: auto; padding: 1rem 3rem;">Refresh Analysis</button>
+        <button onclick="location.reload()" style="width: auto; padding: 1rem 3rem; background: transparent; border: 1px solid #3db4f2; color: #3db4f2;">Refresh Analysis</button>
       </div>
     </div>
   </main>
@@ -129,21 +145,20 @@
     document.getElementById('analyzeBtn').onclick = async () => {
       const user = document.getElementById('usernameInput').value.trim();
       if (!user) return;
-      document.getElementById('analyzeBtn').innerText = "Processing Data...";
+      document.getElementById('analyzeBtn').innerText = "Analyzing...";
 
       try {
         const resp = await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query, variables: {u: user}}) });
         const json = await resp.json();
         if(json.errors) throw new Error();
-        process(json.data, user);
+        process(json.data);
       } catch (e) { alert("Analysis failed. Verify username."); location.reload(); }
     };
 
-    function process(data, userName) {
+    function process(data) {
       const completed = data.COMPLETED.lists[0].entries;
       const planningRaw = data.PLANNING.lists[0].entries;
       const now = Math.floor(Date.now() / 1000);
-      const userCreated = data.User.createdAt;
       
       document.getElementById('loginStep').classList.add('hidden');
       document.getElementById('dashboardStep').classList.remove('hidden');
@@ -178,13 +193,13 @@
 
         if(m.season && m.seasonYear) {
             const key = `${m.season} ${m.seasonYear}`;
-            if(!historyRanking[key]) historyRanking[key] = { year: m.seasonYear, season: m.season, hours: 0, count: 0 };
+            if(!historyRanking[key]) historyRanking[key] = { year: m.seasonYear, hours: 0, count: 0 };
             historyRanking[key].count++;
             historyRanking[key].hours += mins / 60;
         }
       });
 
-      const daysSinceJoining = Math.max(1, (now - userCreated) / 86400);
+      const daysSinceJoining = Math.max(1, (now - data.User.createdAt) / 86400);
       renderVelocity(totalMinutes / 60 / daysSinceJoining, lastMonthMinutes / 60 / 30);
 
       const getTop = (days) => {
@@ -216,30 +231,26 @@
     }
 
     function renderVelocity(hist, recent) {
-      const container = document.getElementById('velocityContainer');
       const metrics = [
-        { label: 'Daily Average', h: hist, r: recent, unit: 'h/d' },
-        { label: 'Weekly Average', h: hist * 7, r: recent * 7, unit: 'h/w' },
-        { label: 'Monthly Average', h: hist * 30, r: recent * 30, unit: 'h/m' }
+        { label: 'Daily Avg', h: hist, r: recent, unit: 'h/d' },
+        { label: 'Weekly Avg', h: hist * 7, r: recent * 7, unit: 'h/w' },
+        { label: 'Monthly Avg', h: hist * 30, r: recent * 30, unit: 'h/m' }
       ];
-      container.innerHTML = metrics.map(m => {
-        const isUp = m.r >= m.h;
-        return `
-          <div class="v-card">
-            <span class="label">${m.label}</span>
-            <div class="value-row">
-              <strong>${m.h.toFixed(2)}${m.unit}</strong>
-              <div class="comparison">
-                (<span class="${isUp ? 'trend-up' : 'trend-down'}">${isUp ? '↑' : '↓'} ${m.r.toFixed(2)}${m.unit}</span>)
-              </div>
+      document.getElementById('velocityContainer').innerHTML = metrics.map(m => `
+        <div class="v-card">
+          <span class="label">${m.label}</span>
+          <div class="value-row">
+            <strong>${m.h.toFixed(1)}${m.unit}</strong>
+            <div class="comparison">
+              (<span class="${m.r >= m.h ? 'trend-up' : 'trend-down'}">${m.r >= m.h ? '↑' : '↓'} ${m.r.toFixed(1)}</span>)
             </div>
-          </div>`;
-      }).join('');
+          </div>
+        </div>`).join('');
     }
 
     function renderRankList(id, list) {
       const el = document.getElementById(id);
-      if(!list.length) { el.innerHTML = '<p style="font-size:0.7rem; color:#9ca3af; padding:10px;">No rated entries.</p>'; return; }
+      if(!list.length) { el.innerHTML = '<p style="font-size:0.7rem; color:#9ca3af; padding:5px;">None found.</p>'; return; }
       el.innerHTML = list.map(e => `
         <a href="https://anilist.co/anime/${e.media.id}" target="_blank" class="rank-item">
           <img src="${e.media.coverImage.medium}" class="rank-img">
@@ -251,17 +262,26 @@
     }
 
     function renderCharts(era, gCombos) {
+      const chartOptions = { 
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { labels: { color: '#9ca3af', font: { size: 10 } } },
+          title: { display: true, color: '#9ca3af', font: { size: 12, weight: 'bold' } }
+        }
+      };
+
       new Chart(document.getElementById('eraChart'), { 
         type: 'polarArea', 
-        data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#3db4f2', '#4ade80'] }] },
-        options: { plugins: { title: { display: true, text: 'PERIOD PREFERENCE', color: '#9ca3af' } } }
+        data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#3db4f2', '#4ade80'], borderWidth: 0 }] },
+        options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'PERIOD PREFERENCE' } } }
       });
 
-      const topC = Object.entries(gCombos).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      const topC = Object.entries(gCombos).sort((a,b) => b[1] - a[1]).slice(0, 6);
       new Chart(document.getElementById('comboGenreChart'), { 
         type: 'bar', 
         data: { labels: topC.map(x => x[0]), datasets: [{ data: topC.map(x => x[1]), backgroundColor: '#a78bfa' }] }, 
-        options: { indexAxis: 'y', plugins: { legend: {display: false}, title: {display: true, text: 'GENRE AFFINITIES', color: '#9ca3af'} } } 
+        options: { ...chartOptions, indexAxis: 'y', plugins: { ...chartOptions.plugins, legend: {display: false}, title: { ...chartOptions.plugins.title, text: 'GENRE AFFINITIES' } } } 
       });
     }
 
@@ -280,7 +300,7 @@
       }
 
       const mostPopular = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.popularity - a.popularity)[0];
-      if(mostPopular) { chosen.add(mostPopular.id); smart.push({a: mostPopular, l: 'Popular Choice', c: 'orange'}); }
+      if(mostPopular) { chosen.add(mostPopular.id); smart.push({a: mostPopular, l: 'Popular', c: 'orange'}); }
 
       const trending = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore)[0];
       if(trending) { chosen.add(trending.id); smart.push({a: trending, l: 'Taste Match', c: 'purple'}); }
@@ -291,9 +311,9 @@
           <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
           <div class="anime-cover"><img src="${item.coverImage.large}"></div>
           <div class="anime-content">
-            <div class="anime-category ${color}" style="font-size:0.6rem; font-weight:bold; text-transform:uppercase; margin-bottom:5px;">${label}</div>
+            <div class="anime-category ${color}">${label}</div>
             <h3 class="anime-title">${item.title.romaji}</h3>
-            <div style="font-size: 0.7rem; color: #9ca3af;">Avg: ${item.averageScore || 'N/A'}% | Affinity: ${item.affinityScore}</div>
+            <div class="anime-meta">Score: ${item.averageScore || '??'}% | Aff: ${item.affinityScore}</div>
           </div>
         </a>`;
 
