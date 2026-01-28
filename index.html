@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AniList User Metrics</title>
+  <title>AniList Media Analytics</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,7 +21,6 @@
     .section-title { margin: 2.5rem 0 1rem; font-size: 1.2rem; border-left: 4px solid #3db4f2; padding-left: 10px; }
     .section-title small { display: block; font-size: 0.75rem; color: #9ca3af; font-weight: normal; margin-top: 2px; }
 
-    /* Velocity Cards */
     .velocity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .v-card { background: #151f2e; padding: 1.2rem; border-radius: 0.8rem; border: 1px solid #1a2332; text-align: center; }
     .v-card span.label { display: block; font-size: 0.65rem; color: #9ca3af; text-transform: uppercase; margin-bottom: 0.4rem; font-weight: 700; }
@@ -32,11 +31,9 @@
     .trend-up { color: #4ade80 !important; }
     .trend-down { color: #f87171 !important; }
 
-    /* Dashboard Charts */
     .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .chart-container { background: #151f2e; border: 1px solid #1a2332; border-radius: 0.8rem; padding: 1rem; min-height: 300px; }
 
-    /* Ranking Columns */
     .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .ranking-col { background: #151f2e; padding: 1.2rem; border-radius: 0.8rem; border: 1px solid #1a2332; }
     .rank-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid #1a233233; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: 6px; }
@@ -46,8 +43,7 @@
     .rank-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rank-score { font-size: 0.8rem; color: #4ade80; font-weight: bold; margin-top: 2px; }
 
-    /* Anime Result Grids */
-    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem; }
     .anime-card { background-color: #1a1d2e; border-radius: 0.6rem; overflow: hidden; transition: 0.3s; text-decoration: none; color: inherit; border: 1px solid transparent; display: flex; flex-direction: column; }
     .anime-card:hover { transform: translateY(-3px); border-color: #3db4f2; }
     .anime-cover { width: 100%; aspect-ratio: 2 / 3; overflow: hidden; }
@@ -57,22 +53,25 @@
     .anime-title { font-size: 0.8rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 1.9rem; }
     .anime-meta { font-size: 0.65rem; color: #9ca3af; margin-top: 6px; }
     
-    .blue { color: #3db4f2; } .purple { color: #a78bfa; } .green { color: #4ade80; } .orange { color: #fb923c; }
+    .blue { color: #3db4f2; } .purple { color: #a78bfa; } .green { color: #4ade80; } .orange { color: #fb923c; } .pink { color: #ec4899; }
     .hidden { display: none !important; }
     
-    /* Login Screen */
     #loginStep { display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 1rem; }
     .login-card { background: #151f2e; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 380px; text-align: center; border: 1px solid #1a2332; }
+    .login-card h2 { margin-bottom: 1.5rem; color: #3db4f2; font-size: 1.3rem; }
     input { width: 100%; background: #0b0e1a; border: 1px solid #1a2332; padding: 1rem; color: white; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 1rem; }
     button { background: #3db4f2; color: white; width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
     button:hover { background: #35a2db; }
+    button:disabled { background: #1a2332; cursor: not-allowed; }
 
-    /* Responsive Adjustments */
+    .notification { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; z-index: 1000; animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 400px; }
+    .notification.error { background: linear-gradient(135deg, #dc2626, #991b1b); border: 1px solid #ef4444; }
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
     @media (max-width: 600px) {
       .header-content { justify-content: center; }
       .results-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.8rem; }
-      .section-title { font-size: 1.1rem; }
-      .v-card strong { font-size: 1.2rem; }
     }
   </style>
 </head>
@@ -81,8 +80,9 @@
     <div class="header-content">
       <h1>AniList Media Analytics</h1>
       <div id="userInfo" class="hidden profile-badge">
-        <span id="usernameDisplay" class="blue"></span>
-        <img id="userAvatar" class="profile-avatar" src="">
+        <span id="usernameDisplay" class="blue" style="font-weight:bold"></span>
+        <img id="userAvatar" class="profile-avatar" src="" alt="User avatar">
+        <button id="logoutBtn" style="padding: 0.4rem 1rem; font-size: 0.8rem; width: auto;">Logout</button>
       </div>
     </div>
   </header>
@@ -90,8 +90,15 @@
   <main>
     <div id="loginStep">
       <div class="login-card">
-        <input type="text" id="usernameInput" placeholder="AniList Username" spellcheck="false" />
-        <button id="analyzeBtn">Analyze Metrics</button>
+        <div id="loginForm">
+          <h2>Enter Your Username</h2>
+          <input type="text" id="usernameInput" placeholder="AniList Username" spellcheck="false" />
+          <button id="analyzeBtn">Analyze Metrics</button>
+        </div>
+        <div id="loadingState" class="hidden" style="text-align: center;">
+          <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #1a2332; border-top-color: #3db4f2; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <p style="margin-top: 1rem; color: #9ca3af;">Loading analytics...</p>
+        </div>
       </div>
     </div>
 
@@ -104,7 +111,7 @@
         <div class="chart-container"><canvas id="comboGenreChart"></canvas></div>
       </div>
 
-      <h2 class="section-title">Top Rated by Period <small>Based on your scores</small></h2>
+      <h2 class="section-title">Top Rated by Period <small>Based on Completed Date</small></h2>
       <div class="ranking-grid">
         <div class="ranking-col">
           <h4 style="margin-bottom:12px; color:#a78bfa; font-size:0.85rem; text-transform:uppercase;">Last 30 Days</h4>
@@ -120,45 +127,75 @@
         </div>
       </div>
 
-      <h2 class="section-title">Priority Recommendations <small>Strategic suggestions</small></h2>
+      <h2 class="section-title">Strategic Recommendations <small>Based on your Planning list</small></h2>
       <div id="smartGrid" class="results-grid"></div>
-
-      <h2 class="section-title">Profile Affinities <small>Based on historical genre combinations</small></h2>
+      <h2 class="section-title">Profile Affinities <small>Top matches based on genre DNA</small></h2>
       <div id="dnaGrid" class="results-grid"></div>
-
-      <div style="text-align: center; margin: 4rem 0;">
-        <button onclick="location.reload()" style="width: auto; padding: 1rem 3rem; background: transparent; border: 1px solid #3db4f2; color: #3db4f2;">Refresh Analysis</button>
-      </div>
     </div>
   </main>
 
   <script>
     const API = 'https://graphql.anilist.co';
+    const STORAGE_KEY = 'anilist_username';
+    
+    function showNotification(message, type = 'info') {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`; n.textContent = message;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 3500);
+    }
+    
     const query = `query($u:String){
       User(name:$u){ name createdAt avatar{medium} }
       COMPLETED: MediaListCollection(userName:$u,type:ANIME,status:COMPLETED){
-        lists{entries{score(format: POINT_10), progress,updatedAt,media{id, duration,genres,season,seasonYear,title{romaji},coverImage{medium}}}}}
+        lists{entries{
+          score(format: POINT_10), progress, 
+          completedAt { year month day },
+          media{id, duration, genres, season, seasonYear, title{romaji}, coverImage{medium}}
+        }}}
       PLANNING: MediaListCollection(userName:$u,type:ANIME,status:PLANNING){
-        lists{entries{media{id,title{romaji},coverImage{large},averageScore,popularity,seasonYear,season,status,genres,relations{edges{relationType}}}}}}
+        lists{entries{media{id, title{romaji}, coverImage{large}, averageScore, popularity, status, genres, relations{edges{relationType}}}}}}
     }`;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('loadingState').classList.remove('hidden');
+        document.getElementById('usernameInput').value = saved;
+        setTimeout(() => document.getElementById('analyzeBtn').click(), 500);
+      }
+    });
+
+    document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem(STORAGE_KEY); location.reload(); };
 
     document.getElementById('analyzeBtn').onclick = async () => {
       const user = document.getElementById('usernameInput').value.trim();
       if (!user) return;
-      document.getElementById('analyzeBtn').innerText = "Analyzing...";
+      const btn = document.getElementById('analyzeBtn');
+      btn.disabled = true;
 
       try {
-        const resp = await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query, variables: {u: user}}) });
+        const resp = await fetch(API, { 
+          method: 'POST', headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({query, variables: {u: user}}) 
+        });
         const json = await resp.json();
         if(json.errors) throw new Error();
+        localStorage.setItem(STORAGE_KEY, user);
         process(json.data);
-      } catch (e) { alert("Analysis failed. Verify username."); location.reload(); }
+      } catch (e) { 
+        showNotification('User not found or API error', 'error');
+        btn.disabled = false;
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('loadingState').classList.add('hidden');
+      }
     };
 
     function process(data) {
       const completed = data.COMPLETED.lists[0].entries;
-      const planningRaw = data.PLANNING.lists[0].entries;
-      const now = Math.floor(Date.now() / 1000);
+      const planningRaw = data.PLANNING?.lists?.[0]?.entries || [];
+      const nowTs = Date.now();
       
       document.getElementById('loginStep').classList.add('hidden');
       document.getElementById('dashboardStep').classList.remove('hidden');
@@ -168,66 +205,64 @@
 
       let totalMinutes = 0;
       let lastMonthMinutes = 0;
-      const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
-      const eraStats = { 'Classic': 0, '2000s': 0, '2010s': 0, 'Modern': 0 };
+      const eraStats = { 'Classic': 0, '2000-2005': 0, '2006-2010': 0, '2011-2015': 0, '2016-2019': 0, '2020-Now': 0 };
       const genreCombos = {};
-      const historyRanking = {};
 
       completed.forEach(e => {
         const m = e.media;
         const mins = (e.progress * (m.duration || 24));
         totalMinutes += mins;
-        if (e.updatedAt > thirtyDaysAgo) lastMonthMinutes += mins;
 
-        if (m.seasonYear < 2000) eraStats['Classic']++;
-        else if (m.seasonYear < 2010) eraStats['2000s']++;
-        else if (m.seasonYear < 2020) eraStats['2010s']++;
-        else eraStats['Modern']++;
-
-        const gList = m.genres.sort();
-        for(let i=0; i<gList.length; i++) {
-          for(let j=i+1; j<gList.length; j++) {
-            genreCombos[`${gList[i]} + ${gList[j]}`] = (genreCombos[`${gList[i]} + ${gList[j]}`] || 0) + 1;
-          }
+        // Cálculo de recência via completedAt
+        if (e.completedAt && e.completedAt.year) {
+          const compTs = new Date(e.completedAt.year, (e.completedAt.month || 1) - 1, e.completedAt.day || 1).getTime();
+          if ((nowTs - compTs) < (30 * 86400000)) lastMonthMinutes += mins;
         }
 
-        if(m.season && m.seasonYear) {
-            const key = `${m.season} ${m.seasonYear}`;
-            if(!historyRanking[key]) historyRanking[key] = { year: m.seasonYear, hours: 0, count: 0 };
-            historyRanking[key].count++;
-            historyRanking[key].hours += mins / 60;
+        // Eras
+        const y = m.seasonYear;
+        if (!y || y < 2000) eraStats['Classic']++;
+        else if (y <= 2005) eraStats['2000-2005']++;
+        else if (y <= 2010) eraStats['2006-2010']++;
+        else if (y <= 2015) eraStats['2011-2015']++;
+        else if (y <= 2019) eraStats['2016-2019']++;
+        else eraStats['2020-Now']++;
+
+        // Gêneros
+        const g = (m.genres || []).sort();
+        for(let i=0; i<g.length; i++) {
+          for(let j=i+1; j<g.length; j++) {
+            const key = `${g[i]} + ${g[j]}`;
+            genreCombos[key] = (genreCombos[key] || 0) + 1;
+          }
         }
       });
 
-      const daysSinceJoining = Math.max(1, (now - data.User.createdAt) / 86400);
-      renderVelocity(totalMinutes / 60 / daysSinceJoining, lastMonthMinutes / 60 / 30);
+      // Velocity calculation
+      const daysSinceJoining = Math.max(1, (nowTs - new Date(data.User.createdAt * 1000).getTime()) / 86400000);
+      const historicDailyAvg = totalMinutes / 60 / daysSinceJoining;
+      const recentDailyAvg = lastMonthMinutes / 60 / 30;
+      renderVelocity(historicDailyAvg, recentDailyAvg);
 
+      // Rankings baseados em completedAt
       const getTop = (days) => {
-        const cutoff = now - (days * 86400);
+        const limit = nowTs - (days * 86400000);
         return completed
-          .filter(e => e.updatedAt > cutoff && e.score > 0)
-          .sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+          .filter(e => {
+            if (!e.completedAt || !e.completedAt.year) return false;
+            const ts = new Date(e.completedAt.year, (e.completedAt.month || 1) - 1, e.completedAt.day || 1).getTime();
+            return ts > limit && e.score > 0;
+          })
+          .sort((a, b) => b.score - a.score)
           .slice(0, 5);
       };
+
       renderRankList('top30', getTop(30));
       renderRankList('top90', getTop(90));
       renderRankList('top365', getTop(365));
 
-      const planningList = planningRaw.map(e => {
-        const m = e.media;
-        m.isSequel = m.relations.edges.some(edge => edge.relationType === 'PREQUEL');
-        let affinity = 0;
-        m.genres.forEach((g, i) => {
-          m.genres.slice(i+1).forEach(g2 => {
-            affinity += (genreCombos[`${[g, g2].sort().join(' + ')}`] || 0);
-          });
-        });
-        m.affinityScore = affinity;
-        return m;
-      }).filter(m => !m.isSequel && (m.status === 'FINISHED' || m.status === 'RELEASING'));
-
       renderCharts(eraStats, genreCombos);
-      renderRecommendations(historyRanking, planningList);
+      renderRecommendations(genreCombos, planningRaw);
     }
 
     function renderVelocity(hist, recent) {
@@ -236,6 +271,7 @@
         { label: 'Weekly Avg', h: hist * 7, r: recent * 7, unit: 'h/w' },
         { label: 'Monthly Avg', h: hist * 30, r: recent * 30, unit: 'h/m' }
       ];
+
       document.getElementById('velocityContainer').innerHTML = metrics.map(m => `
         <div class="v-card">
           <span class="label">${m.label}</span>
@@ -250,7 +286,7 @@
 
     function renderRankList(id, list) {
       const el = document.getElementById(id);
-      if(!list.length) { el.innerHTML = '<p style="font-size:0.7rem; color:#9ca3af; padding:5px;">None found.</p>'; return; }
+      if(!list.length) { el.innerHTML = '<p style="font-size:0.7rem; color:#9ca3af; padding:10px;">No data in this period.</p>'; return; }
       el.innerHTML = list.map(e => `
         <a href="https://anilist.co/anime/${e.media.id}" target="_blank" class="rank-item">
           <img src="${e.media.coverImage.medium}" class="rank-img">
@@ -262,63 +298,46 @@
     }
 
     function renderCharts(era, gCombos) {
-      const chartOptions = { 
-        responsive: true, 
-        maintainAspectRatio: false,
-        plugins: { 
-          legend: { labels: { color: '#9ca3af', font: { size: 10 } } },
-          title: { display: true, color: '#9ca3af', font: { size: 12, weight: 'bold' } }
-        }
-      };
-
+      const cfg = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#9ca3af', font: { size: 10 } } } } };
       new Chart(document.getElementById('eraChart'), { 
         type: 'polarArea', 
-        data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#3db4f2', '#4ade80'], borderWidth: 0 }] },
-        options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: 'PERIOD PREFERENCE' } } }
+        data: { labels: Object.keys(era), datasets: [{ data: Object.values(era), backgroundColor: ['#f87171', '#fb923c', '#facc15', '#3db4f2', '#a78bfa', '#4ade80'], borderWidth: 0 }] },
+        options: cfg
       });
-
       const topC = Object.entries(gCombos).sort((a,b) => b[1] - a[1]).slice(0, 6);
       new Chart(document.getElementById('comboGenreChart'), { 
         type: 'bar', 
         data: { labels: topC.map(x => x[0]), datasets: [{ data: topC.map(x => x[1]), backgroundColor: '#a78bfa' }] }, 
-        options: { ...chartOptions, indexAxis: 'y', plugins: { ...chartOptions.plugins, legend: {display: false}, title: { ...chartOptions.plugins.title, text: 'GENRE AFFINITIES' } } } 
+        options: { ...cfg, indexAxis: 'y', plugins: { legend: {display: false} } } 
       });
     }
 
-    function renderRecommendations(historyRanking, planning) {
-      const ranking = Object.values(historyRanking);
-      const chosen = new Set();
-      const smart = [];
-      const sortedRanking = ranking.sort((a,b) => (b.hours * Math.sqrt(b.count)) - (a.hours * Math.sqrt(a.count)));
+    function renderRecommendations(genreCombos, planning) {
+      const processed = planning.map(e => {
+        const m = e.media;
+        let aff = 0;
+        const gs = m.genres || [];
+        gs.forEach((g, i) => gs.slice(i+1).forEach(g2 => {
+          const key = [g, g2].sort().join(' + ');
+          aff += (genreCombos[key] || 0);
+        }));
+        m.affinityScore = aff;
+        return m;
+      }).filter(m => (m.status === 'FINISHED' || m.status === 'RELEASING'));
 
-      const bestScore = [...planning].sort((a,b) => b.averageScore - a.averageScore)[0];
-      if(bestScore) { chosen.add(bestScore.id); smart.push({a: bestScore, l: 'Top Rated', c: 'green'}); }
-      
-      for(let r of sortedRanking) {
-        const m = planning.find(a => !chosen.has(a.id) && a.seasonYear === r.year);
-        if(m) { chosen.add(m.id); smart.push({a: m, l: `Best of ${r.year}`, c: 'blue'}); break; }
-      }
-
-      const mostPopular = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.popularity - a.popularity)[0];
-      if(mostPopular) { chosen.add(mostPopular.id); smart.push({a: mostPopular, l: 'Popular', c: 'orange'}); }
-
-      const trending = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore)[0];
-      if(trending) { chosen.add(trending.id); smart.push({a: trending, l: 'Taste Match', c: 'purple'}); }
-
-      const aff = planning.filter(a => !chosen.has(a.id)).sort((a,b) => b.affinityScore - a.affinityScore).slice(0, 4);
-
+      const sorted = processed.sort((a,b) => b.affinityScore - a.affinityScore);
       const card = (item, label, color) => `
-          <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
+        <a href="https://anilist.co/anime/${item.id}" target="_blank" class="anime-card">
           <div class="anime-cover"><img src="${item.coverImage.large}"></div>
           <div class="anime-content">
             <div class="anime-category ${color}">${label}</div>
             <h3 class="anime-title">${item.title.romaji}</h3>
-            <div class="anime-meta">Score: ${item.averageScore || '??'}% | Aff: ${item.affinityScore}</div>
+            <div class="anime-meta">Affinity: ${item.affinityScore}</div>
           </div>
         </a>`;
 
-      document.getElementById('smartGrid').innerHTML = smart.map(p => card(p.a, p.l, p.c)).join('');
-      document.getElementById('dnaGrid').innerHTML = aff.map(a => card(a, 'High Affinity', 'purple')).join('');
+      document.getElementById('smartGrid').innerHTML = sorted.slice(0, 6).map(p => card(p, 'Top Match', 'blue')).join('');
+      document.getElementById('dnaGrid').innerHTML = sorted.slice(6, 12).map(p => card(p, 'Genre Affinity', 'purple')).join('');
     }
   </script>
 </body>
